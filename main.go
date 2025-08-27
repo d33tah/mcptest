@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"io"
 	"log"
@@ -209,8 +210,17 @@ func handleGetCurrentTime(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(getCurrentTimeResponseData)
 }
 
+//go:embed public/index.html
+var indexHTML string
+
+func index(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(indexHTML))
+}
+
 func main() {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", index)
 	mux.HandleFunc("/openapi.json", handleOpenAPI)
 	mux.HandleFunc("/get_current_time", handleGetCurrentTime)
 	handlerWithMiddleware := loggingMiddleware(corsMiddleware(serverHeaderMiddleware(mux)))
