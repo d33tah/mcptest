@@ -1,1 +1,283 @@
-<h1>Hello, world</h1>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>mcptest.xyz — Hosted, Minimal MCP Flow Tester</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="mcptest.xyz: a tiny, pre-hosted unauthorized MCP test server exposing a single tool, revealsecret, to quickly verify remote MCP flow support. Pure Go implementation, no frameworks.">
+  <meta name="theme-color" content="#0c0f14">
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --fg: #e7edf3;
+      --muted: #9fb3c8;
+      --card: #121722;
+      --accent: #6ad1ff;
+      --accent-2: #9fff9f;
+      --warn: #ffd27d;
+      --danger: #ff9fa0;
+      --border: #253044;
+      --shadow: 0 8px 20px rgba(0,0,0,0.35);
+      --radius: 14px;
+      --radius-sm: 10px;
+      --radius-xs: 8px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --fg: #0b1220;
+        --muted: #4b5b70;
+        --card: #ffffff;
+        --accent: #0c7bdc;
+        --accent-2: #1a8f2c;
+        --warn: #a05c00;
+        --danger: #9a1c1e;
+        --border: #e2e8f0;
+        --shadow: 0 8px 22px rgba(4,18,38,0.08);
+      }
+    }
+    html, body {
+      background: radial-gradient(1200px 600px at 10% -5%, rgba(106,209,255,0.08), transparent 60%),
+                  radial-gradient(900px 500px at 110% 0%, rgba(159,255,159,0.10), transparent 55%),
+                  var(--bg);
+      color: var(--fg);
+      font-family: var(--font);
+      margin: 0;
+      padding: 0;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover, a:focus { text-decoration: underline; }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 22px 18px 80px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge {
+      width: 38px; height: 38px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, rgba(106,209,255,0.22), rgba(159,255,159,0.22));
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .repo {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .hero {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent), var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    .hero h1 {
+      margin: 0 0 10px 0;
+      font-size: 26px;
+      letter-spacing: 0.2px;
+    }
+    .hero p { margin: 6px 0; color: var(--muted); }
+    .cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .btn {
+      appearance: none; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(180deg, rgba(106,209,255,0.15), rgba(106,209,255,0.12));
+      color: var(--fg);
+      padding: 10px 14px; border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      font-weight: 600; letter-spacing: 0.2px;
+    }
+    .btn.secondary {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 14px 0 10px;
+    }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .card h2 { margin: 0 0 8px 0; font-size: 18px; }
+    .card p { margin: 6px 0; color: var(--muted); }
+    .inline-note {
+      font-size: 13px; color: var(--muted);
+    }
+    .compare {
+      display: grid; gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent), var(--card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-top: 4px;
+    }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+      font-size: 12px; font-weight: 600;
+    }
+    .pill.ai { color: var(--accent); }
+    .pill.api { color: var(--accent-2); }
+    .code {
+      font-family: var(--mono);
+      font-size: 13px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      overflow: auto;
+      white-space: nowrap;
+    }
+    .endpoint {
+      display: grid; gap: 8px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+    }
+    .tiny { font-size: 12px; color: var(--muted); }
+    .list { margin: 8px 0 4px 18px; }
+    .list li { margin: 6px 0; }
+    .ok { color: var(--accent-2); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .danger { color: var(--danger); font-weight: 700; }
+    footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex; flex-direction: column; gap: 8px;
+      align-items: flex-start;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="badge">M</div>
+        <div>
+          <div class="title">mcptest.xyz</div>
+          <div class="inline-note">Hosted, minimal MCP flow tester — pure Go, no frameworks</div>
+        </div>
+      </div>
+      <div class="repo">
+        Source: <a href="https://github.com/d33tah/mcptest" target="_blank" rel="noopener">github.com/d33tah/mcptest</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>Quickly verify your client can call a remote MCP tool</h1>
+      <p>This service runs an unauthorized MCP server exposing a single tool: <strong>revealsecret</strong>. Call it from your client to get a small proof that a real MCP round‑trip worked.</p>
+      <div class="cta">
+        <a class="btn" href="#openai">Use with OpenAI Playground (Flows)</a>
+        <a class="btn secondary" href="#openapi">Use with OpenAPI (Open WebUI)</a>
+      </div>
+    </section>
+
+    <section id="endpoints" class="grid">
+      <div class="card" id="openai">
+        <h2>OpenAI Playground (Flows)</h2>
+        <p>Point your Flow’s MCP tool to this SSE endpoint, then invoke <strong>revealsecret</strong> to confirm connectivity.</p>
+        <div class="endpoint">
+          <div class="inline-note">MCP SSE endpoint</div>
+          <div class="code">https://mcptest.xyz/sse</div>
+        </div>
+        <ul class="list">
+          <li>Authorization: set to <strong>None</strong> or provide <strong>any token</strong> — it is not checked.</li>
+          <li>Add the tool and call <strong>revealsecret</strong>; you should see a short success string.</li>
+        </ul>
+      </div>
+
+      <div class="card" id="openapi">
+        <h2>OpenAPI (Open WebUI)</h2>
+        <p>Import the OpenAPI spec URL, then run the operation that maps to <strong>revealsecret</strong>.</p>
+        <div class="endpoint">
+          <div class="inline-note">OpenAPI spec URL</div>
+          <div class="code">https://mcptest.xyz/openapi.json</div>
+        </div>
+        <ul class="list">
+          <li>Authorization: set to <strong>None</strong> or use any token — it’s ignored.</li>
+          <li>Run <strong>POST /reveal_secret</strong>; on success, you’ll receive a small “secret”.</li>
+        </ul>
+        <p class="tiny">The spec exposes <code>/reveal_secret</code> (POST) and related schemas [1].</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>OpenAI vs OpenAPI — don’t mix them up</h2>
+      <div class="compare">
+        <div>
+          <span class="pill ai">OpenAI</span>
+          <div class="inline-note">Company/products (e.g., Playground, Flows). Here, you configure a Flow tool that talks MCP over HTTP/S via SSE.</div>
+        </div>
+        <div>
+          <span class="pill api">OpenAPI</span>
+          <div class="inline-note">An API description format (formerly Swagger). Tools like Open WebUI can import an OpenAPI spec to call HTTP endpoints.</div>
+        </div>
+        <div class="inline-note">They differ by one letter, but they’re unrelated concepts here. Use the left endpoint for OpenAI Playground Flows, and the right spec URL for OpenAPI-based clients.</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>What to expect</h2>
+        <ul class="list">
+          <li class="ok">Success: calling <strong>revealsecret</strong> returns a short confirmation string.</li>
+          <li class="warn">If your client can’t list or call the tool, check your endpoint URL and network access.</li>
+          <li class="danger">Anything else unexpected? Please file an issue with details.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Why this exists</h2>
+        <p>To make it fast and safe to verify remote MCP flow support without wiring up credentials or a full stack.</p>
+        <p class="inline-note">This is a “pure” Go implementation using the standard library (no frameworks), so it’s easy to read and tweak the flow [1].</p>
+      </div>
+    </section>
+
+    <footer>
+      <div>[1] Source code: <a href="https://github.com/d33tah/mcptest" target="_blank" rel="noopener">github.com/d33tah/mcptest</a></div>
+      <div>Feedback or unexpected behavior? <a href="https://github.com/d33tah/mcptest/issues/new" target="_blank" rel="noopener">Open a new issue</a>.</div>
+    </footer>
+  </div>
+</body>
+</html>
