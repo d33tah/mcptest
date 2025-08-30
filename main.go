@@ -231,7 +231,7 @@ func (ss *SessionStore) add() (string, chan string) {
 	messageChan := make(chan string, 1)
 
 	ss.sessions[sessionID] = messageChan
-	log.Printf("✅ Sesja utworzona: %s", sessionID)
+	log.Printf("✅ Session created: %s", sessionID)
 	return sessionID, messageChan
 }
 
@@ -246,7 +246,7 @@ func (ss *SessionStore) remove(sessionID string) {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 	delete(ss.sessions, sessionID)
-	log.Printf("❌ Sesja usunięta: %s", sessionID)
+	log.Printf("❌ Session removed: %s", sessionID)
 }
 
 type JSONRPCRequest struct {
@@ -258,7 +258,7 @@ type JSONRPCRequest struct {
 func sseHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
-		log.Printf("⚠️ Otrzymano POST na /sse, odpowiadam 405 Method Not Allowed")
+		log.Printf("⚠️ Received POST on /sse, responding with 405 Method Not Allowed")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -270,7 +270,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(w, "Streaming nie jest wspierany!", http.StatusInternalServerError)
+		http.Error(w, "Streaming is not supported!", http.StatusInternalServerError)
 		return
 	}
 
@@ -282,7 +282,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	sessionID, messageChan := store.add()
 	defer store.remove(sessionID)
 
-	log.Printf("➡️ Klient połączony z /sse, wysyłam dane inicjalizacyjne dla sesji %s", sessionID)
+	log.Printf("➡️ Client connected to /sse, sending initialization data for session %s", sessionID)
 
 	endpointData := fmt.Sprintf("/messages/?session_id=%s", sessionID)
 	fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", endpointData)
@@ -298,13 +298,13 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 
 		case msg := <-messageChan:
 			if _, err := fmt.Fprintf(w, "%s", msg); err != nil {
-				log.Printf("Błąd zapisu do strumienia SSE dla sesji %s: %v", sessionID, err)
+				log.Printf("Error writing to SSE stream for session %s: %v", sessionID, err)
 				return
 			}
 			flusher.Flush()
 
 		case <-ctx.Done():
-			log.Printf("Klient dla sesji %s rozłączył się.", sessionID)
+			log.Printf("Client for session %s disconnected.", sessionID)
 			return
 		}
 	}
@@ -318,13 +318,13 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) {
 
 	sessionID := r.URL.Query().Get("session_id")
 	if sessionID == "" {
-		http.Error(w, "Brak session_id w zapytaniu", http.StatusBadRequest)
+		http.Error(w, "Missing session_id in query", http.StatusBadRequest)
 		return
 	}
 
 	messageChan, found := store.get(sessionID)
 	if !found {
-		http.Error(w, "Sesja nie znaleziona", http.StatusNotFound)
+		http.Error(w, "Session not found", http.StatusNotFound)
 		return
 	}
 
@@ -333,11 +333,11 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req JSONRPCRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "Nieprawidłowy JSON-RPC", http.StatusBadRequest)
+		http.Error(w, "Invalid JSON-RPC", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("📬 Otrzymano metodę '%s' [ID: %s] dla sesji %s", req.Method, string(req.ID), sessionID)
+	log.Printf("📬 Received method '%s' [ID: %s] for session %s", req.Method, string(req.ID), sessionID)
 
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte("Accepted"))
@@ -368,7 +368,7 @@ func processAndRespond(req JSONRPCRequest, messageChan chan string, sessionID st
 			secret.Result,
 		)
 	default:
-		log.Printf("Nieobsługiwana metoda: %s", req.Method)
+		log.Printf("Unsupported method: %s", req.Method)
 		return
 	}
 
@@ -376,9 +376,9 @@ func processAndRespond(req JSONRPCRequest, messageChan chan string, sessionID st
 
 	select {
 	case messageChan <- sseMessage:
-		log.Printf("📨 Wysłano odpowiedź na '%s' [ID: %s] do sesji %s", req.Method, string(req.ID), sessionID)
+		log.Printf("📨 Sent response to '%s' [ID: %s] for session %s", req.Method, string(req.ID), sessionID)
 	case <-time.After(2 * time.Second):
-		log.Printf("Timeout podczas wysyłania odpowiedzi do sesji %s", sessionID)
+		log.Printf("Timeout while sending response to session %s", sessionID)
 	}
 }
 
